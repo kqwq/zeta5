@@ -8,6 +8,7 @@ A simple, easy-to-use library for connecting Khan Academy programs to a Node.js 
 
 ### Router setup
 0. Expose port 3478 on your router. You can find a guide [here](https://www.noip.com/support/knowledgebase/general-port-forwarding-guide/)
+- Make sure the port is forwarded to the computer running the server
 
 ### Server-side setup
 1. Clone this repository ```git clone https://github.com/kqwq/zeta5.git```
