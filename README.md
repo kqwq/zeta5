@@ -15,7 +15,7 @@ A simple, easy-to-use library for connecting Khan Academy programs to a Node.js 
 2. Find your public IPv4 address. You can use a website like [this one](https://www.whatismyip.com/what-is-my-public-ip-address/).
 3. (Optional) Edit the `CONFIGURATION` variable in /server/index.js
   - Use the IPv4 address from step 2 for the public IP fields
-4. cd into `/server`
+4. cd into `zeta5/server`
 5. Run ```npm install && npm run start```
 6. Copy the connection code from the console
 

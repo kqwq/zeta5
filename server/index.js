@@ -27,8 +27,8 @@ const CONFIGURATION = {
     | create-new: create a new handshake program on Khan Academy
     | use-existing: update this user's existing program of ID CONFIGURATION.handshakeProgramId
   */
-  handshakeProgramType: "use-existing",
-  handshakeProgramId: "5296864044564480", // Only used for use-existing handshake program type
+  handshakeProgramType: "create-new",
+  handshakeProgramId: "", // Only used for use-existing handshake program type
   handshakeProgramTitle: "zeta5 Handshake Program",
 
   /*
