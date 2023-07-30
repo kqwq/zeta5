@@ -53,6 +53,7 @@ const CONFIGURATION = {
 
 // Imports
 import fs from "fs";
+import fetch from "node-fetch";
 import Turn from "node-turn";
 
 /*
