@@ -39,7 +39,7 @@ const colors = {
 };
 
 // Globals
-let offers = [];
+let connectionChannels = [];
 
 function getHourlyFilename(date) {
   // Format YY-MM-DD-HH.js
@@ -56,18 +56,27 @@ function getHourlyFilename(date) {
 async function refreshOffers(numberOfOffers = 100) {
   // Create 100 SDP offers and save them to the offers directory
   for (let i = 0; i < numberOfOffers; i++) {
-    // Create offer
-    const connection = new wtrc.RTCPeerConnection();
-    // On candidate
-    connection.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log("candidate", event.candidate);
-      }
-    };
-    // Add to offers
-    const offer = await connection.createOffer();
-    offers.push(offer);
+    const cc = connectionChannels[i];
+    if (!cc || !cc.isConnected) {
+      // Create offer
+      const peerConnection = new wtrc.RTCPeerConnection();
+      // On candidate
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log("candidate", event.candidate);
+        }
+      };
+      // Add to offers
+      const offer = await peerConnection.createOffer();
+      const connectionChannel = {
+        isConnected: false,
+        offer,
+        peerConnection,
+      };
+      connectionChannels[i] = connectionChannel;
+    }
   }
+
   // Remove all files in offers directory
   const files = await fs.promises.readdir(offersDir);
   for (const file of files) {
@@ -80,7 +89,9 @@ async function refreshOffers(numberOfOffers = 100) {
   await fs.promises.writeFile(
     `${offersDir}/${filename}`,
     `window.sdp = ${JSON.stringify(
-      offers.map((offer) => offer.sdp),
+      connectionChannels.map((cc) =>
+        cc?.isConnected ? "CONNECTED" : cc.offer.sdp
+      ),
       null,
       2
     )};`
@@ -88,7 +99,7 @@ async function refreshOffers(numberOfOffers = 100) {
   // Log
   console.log(
     colors.green,
-    `Wrote ${offers.length} offers to ${offersDir}/${filename}`,
+    `Wrote ${numberOfOffers} offers to ${offersDir}/${filename}`,
     colors.reset
   );
 }
@@ -99,17 +110,6 @@ async function main() {
 
   await refreshOffers(3);
 
-  // Create offer
-  const connection = new wtrc.RTCPeerConnection();
-  connection.onicecandidate = (event) => {
-    if (event.candidate) {
-      console.log("candidate", event.candidate);
-    }
-  };
-  const offer = await connection.createOffer();
-  await connection.setLocalDescription(offer);
-  console.log("offer", offer);
-
   // Listen with the TURN server
   const server = new Turn({
     listeningPort: CONFIGURATION.listenToPort,
@@ -119,9 +119,33 @@ async function main() {
     },
   });
   server.onSdpPacket = (contents) => {
-    console.log("sdp", JSON.stringify(contents));
+    const [identifier, sdpIndex, chunkNumber, data] = contents.split(":");
+    const cc = connectionChannels[sdpIndex];
+    if (!cc) {
+      throw new Error("Invalid sdpIndex");
+      return;
+    }
+    if (cc.isConnected) {
+      throw new Error("Connection already established");
+      return;
+    }
+
+    // Establish connection
+    cc.peerConnection.setRemoteDescription({
+      type: "answer",
+      sdp: data,
+    });
+    cc.peerConnection.addEventListener("connectionstatechange", (event) => {
+      if (cc.peerConnection.connectionState === "connected") {
+        cc.isConnected = true;
+        console.log("Connection established");
+        // Send data
+        cc.peerConnection.send("Hello world");
+      }
+    });
   };
   server.start();
   console.log("TURN server listening on port", CONFIGURATION.listenToPort);
 }
+
 main();

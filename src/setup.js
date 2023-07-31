@@ -66,7 +66,8 @@ const setup = async () => {
   if (!fs.existsSync("dist/scripts/")) {
     fs.mkdirSync("dist/scripts/");
   }
-  await fs.promises.writeFile("dist/scripts/webpage-client.js", newCode);
+  // TODO !
+  // await fs.promises.writeFile("dist/scripts/webpage-client.js", newCode);
 
   // Write to config.json file
   await fs.promises.writeFile(
