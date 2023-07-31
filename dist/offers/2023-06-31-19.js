@@ -1,5 +1,5 @@
 window.sdp = [
-  "v=0\r\no=- 1382448476597681877 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=msid-semantic: WMS\r\n",
-  "v=0\r\no=- 5046296831672026658 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=msid-semantic: WMS\r\n",
-  "v=0\r\no=- 4879009490375381405 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=msid-semantic: WMS\r\n"
+  "v=0\r\no=- 1411530194391011742 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=msid-semantic: WMS\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=ice-ufrag:9HkM\r\na=ice-pwd:3C3UVrNBI3c/QwxqkMa9Ysbq\r\na=ice-options:trickle\r\na=fingerprint:sha-256 F4:B4:F4:B9:10:AF:F7:6E:94:60:D0:B0:A3:3B:7D:F1:9F:AD:72:60:40:D6:73:7B:99:F5:F4:A0:B1:76:FC:39\r\na=setup:actpass\r\na=mid:0\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n",
+  "v=0\r\no=- 8068509586901972494 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=msid-semantic: WMS\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=ice-ufrag:JU7U\r\na=ice-pwd:9FH4FO/Apqg+ykAxly4qZKKa\r\na=ice-options:trickle\r\na=fingerprint:sha-256 F7:12:56:6D:6E:AB:05:5C:F6:DF:D0:4D:36:38:82:FC:17:9C:0F:62:BD:18:26:DA:28:15:62:19:26:40:B5:68\r\na=setup:actpass\r\na=mid:0\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n",
+  "v=0\r\no=- 8067828823319658569 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=msid-semantic: WMS\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=ice-ufrag:7DXe\r\na=ice-pwd:G2tPJNYLFkM/amgqRRtHFgqR\r\na=ice-options:trickle\r\na=fingerprint:sha-256 03:4B:C4:67:21:07:3A:2F:6E:35:73:E8:A9:07:6B:E9:A3:78:36:F4:7C:49:D8:E1:CE:55:8F:BF:30:D5:FB:1F\r\na=setup:actpass\r\na=mid:0\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n"
 ];

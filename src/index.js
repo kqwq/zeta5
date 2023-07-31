@@ -58,15 +58,15 @@ async function refreshOffers(numberOfOffers = 100) {
   for (let i = 0; i < numberOfOffers; i++) {
     const cc = connectionChannels[i];
     if (!cc || !cc.isConnected) {
-      // Create offer
+      // Create and add offer
       const peerConnection = new wtrc.RTCPeerConnection();
-      // On candidate
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          console.log("candidate", event.candidate);
-        }
+      const sendChannel = peerConnection.createDataChannel("sendChannel");
+      sendChannel.onopen = (x) => {
+        sendChannel.send("open", x);
       };
-      // Add to offers
+      sendChannel.onclose = (x) => {
+        sendChannel.send("close", x);
+      };
       const offer = await peerConnection.createOffer();
       const connectionChannel = {
         isConnected: false,
@@ -108,7 +108,7 @@ async function main() {
   // Manage websocket connections
   const connections = [];
 
-  // await refreshOffers(3);
+  await refreshOffers(3);
 
   // Listen with the TURN server
   const server = new Turn({
@@ -118,32 +118,70 @@ async function main() {
       username: "password",
     },
   });
-  // server.onSdpPacket = (contents) => {
-  //   const [identifier, sdpIndex, chunkNumber, data] = contents.split(":");
-  //   const cc = connectionChannels[sdpIndex];
-  //   if (!cc) {
-  //     throw new Error("Invalid sdpIndex");
-  //     return;
-  //   }
-  //   if (cc.isConnected) {
-  //     throw new Error("Connection already established");
-  //     return;
-  //   }
+  server.onSdpPacket = (contents) => {
+    try {
+      // Log
+      console.log("onSdpPacket", contents);
+      if (!contents.includes(":")) {
+        throw new Error("Invalid contents");
+      }
 
-  //   // Establish connection
-  //   cc.peerConnection.setRemoteDescription({
-  //     type: "answer",
-  //     sdp: data,
-  //   });
-  //   cc.peerConnection.addEventListener("connectionstatechange", (event) => {
-  //     if (cc.peerConnection.connectionState === "connected") {
-  //       cc.isConnected = true;
-  //       console.log("Connection established");
-  //       // Send data
-  //       cc.peerConnection.send("Hello world");
-  //     }
-  //   });
-  // };
+      // Extract contents
+      const [identifier, chunkIndexStr, totalChunksStr, sdpIndexStr, chunk] =
+        contents.split(":");
+      const chunkIndex = parseInt(chunkIndexStr);
+      const totalChunks = parseInt(totalChunksStr);
+      const sdpIndex = parseInt(sdpIndexStr);
+
+      // Make sure connectionChannels[sdpIndex] is valid
+      const cc = connectionChannels[sdpIndex];
+      if (!cc) {
+        throw new Error("Invalid sdpIndex" + sdpIndex);
+      }
+      if (cc.isConnected) {
+        throw new Error("Connection already established");
+      }
+
+      // Add chunk to cc.sdpChunks
+      if (!cc.sdpChunks) {
+        cc.sdpChunks = [];
+      }
+      cc.sdpChunks[chunkIndex] = chunk;
+
+      // If all chunks from index 0 to totalChunks - 1 are present, then we can establish the connection
+      let allChunksPresent = true;
+      for (let i = 0; i < totalChunks; i++) {
+        if (!cc.sdpChunks[i]) {
+          allChunksPresent = false;
+          break;
+        }
+      }
+      if (!allChunksPresent) {
+        return;
+      }
+
+      // If all chunks are present, then we can establish the connection
+      const sdp = cc.sdpChunks.join("");
+      console.log("sdp", sdp);
+      cc.peerConnection.setRemoteDescription({
+        type: "answer",
+        sdp,
+      });
+
+      // If the connection is established, then send a message
+      cc.peerConnection.onconnectionstatechange = () => {
+        if (cc.peerConnection.connectionState === "connected") {
+          // Log
+          console.log("Connection established");
+          cc.isConnected = true;
+          // Send message
+          cc.peerConnection.createDataChannel("test");
+        }
+      };
+    } catch (error) {
+      console.error("error", error.message);
+    }
+  };
   server.start();
   console.log("TURN server listening on port", CONFIGURATION.listenToPort);
 }
