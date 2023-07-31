@@ -2,33 +2,27 @@
 
 # zeta5
 
-A simple, easy-to-use library for connecting Khan Academy programs to a Node.js server.
+A simple, easy-to-use, zero-configuration library for connecting Khan Academy programs to a Node.js server.
 
-## How to set up
+## Initial setup
+All of these instructions only need to be followed once to configure everything for the first time.
 
 ### Router setup
-0. Expose port 3478 on your router. You can find a guide [here](https://www.noip.com/support/knowledgebase/general-port-forwarding-guide/)
+1. Expose port 3478 on your router. You can find a guide [here](https://www.noip.com/support/knowledgebase/general-port-forwarding-guide/)
 - Make sure the port is forwarded to the computer running the server
 
-### Server-side setup
-1. Clone this repository ```git clone https://github.com/kqwq/zeta5.git```
-2. Find your public IPv4 address. You can use a website like [this one](https://www.whatismyip.com/what-is-my-public-ip-address/).
-3. (Optional) Edit the `CONFIGURATION` variable in /server/index.js
-  - Use the IPv4 address from step 2 for the public IP fields
-4. cd into `zeta5/server`
-5. Run ```npm install && npm run start```
-6. Copy the connection code from the console
+### Server-side setup 
+2. Fork this repository on GitHub. This step is required for automatic hourly commits.
+3. Clone your forked repository ```git clone https://github.com/<Your GitHub username>/zeta5.git```
+4. Run ```npm install && npm run setup```
+  - Before continuing, make sure /dist/scripts/webpage-cilent.js exists
 
-### PJS program setup
-7. Copy and paste the contents of /client/pjs-client.js into the beginning of your program
-8. Paste the connection code from step 6 into the input box at the top of the program
-
-### Webpage setup
-7. Include the following `<script>` tag in your webpage:
+### Khan Academy Webpage setup
+5. Include the following `<script>` tag in your webpage:
 ```html
-<script src="https://raw.githubusercontent.com/kqwq/zeta5/main/client/webpage-client.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/<Your GitHub username>/zeta5@main/dist/scripts/webpage-client.js"></script>
 ```
-8. Paste the connection code from step 6 into the input box at the top of the webpage
+1. Paste the connection code from step 6 into the input box at the top of the webpage
 
 ## Customizing the server
 
