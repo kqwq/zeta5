@@ -108,7 +108,7 @@ async function main() {
   // Manage websocket connections
   const connections = [];
 
-  await refreshOffers(3);
+  // await refreshOffers(3);
 
   // Listen with the TURN server
   const server = new Turn({
@@ -118,32 +118,32 @@ async function main() {
       username: "password",
     },
   });
-  server.onSdpPacket = (contents) => {
-    const [identifier, sdpIndex, chunkNumber, data] = contents.split(":");
-    const cc = connectionChannels[sdpIndex];
-    if (!cc) {
-      throw new Error("Invalid sdpIndex");
-      return;
-    }
-    if (cc.isConnected) {
-      throw new Error("Connection already established");
-      return;
-    }
+  // server.onSdpPacket = (contents) => {
+  //   const [identifier, sdpIndex, chunkNumber, data] = contents.split(":");
+  //   const cc = connectionChannels[sdpIndex];
+  //   if (!cc) {
+  //     throw new Error("Invalid sdpIndex");
+  //     return;
+  //   }
+  //   if (cc.isConnected) {
+  //     throw new Error("Connection already established");
+  //     return;
+  //   }
 
-    // Establish connection
-    cc.peerConnection.setRemoteDescription({
-      type: "answer",
-      sdp: data,
-    });
-    cc.peerConnection.addEventListener("connectionstatechange", (event) => {
-      if (cc.peerConnection.connectionState === "connected") {
-        cc.isConnected = true;
-        console.log("Connection established");
-        // Send data
-        cc.peerConnection.send("Hello world");
-      }
-    });
-  };
+  //   // Establish connection
+  //   cc.peerConnection.setRemoteDescription({
+  //     type: "answer",
+  //     sdp: data,
+  //   });
+  //   cc.peerConnection.addEventListener("connectionstatechange", (event) => {
+  //     if (cc.peerConnection.connectionState === "connected") {
+  //       cc.isConnected = true;
+  //       console.log("Connection established");
+  //       // Send data
+  //       cc.peerConnection.send("Hello world");
+  //     }
+  //   });
+  // };
   server.start();
   console.log("TURN server listening on port", CONFIGURATION.listenToPort);
 }

