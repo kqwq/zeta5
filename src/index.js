@@ -68,6 +68,7 @@ async function refreshOffers(numberOfOffers = 100) {
         sendChannel.send("close", x);
       };
       const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
       const connectionChannel = {
         isConnected: false,
         offer,
@@ -121,14 +122,15 @@ async function main() {
   server.onSdpPacket = (contents) => {
     try {
       // Log
-      console.log("onSdpPacket", contents);
+      console.log("onSdpPacket", JSON.stringify(contents));
       if (!contents.includes(":")) {
         throw new Error("Invalid contents");
       }
 
       // Extract contents
-      const [identifier, chunkIndexStr, totalChunksStr, sdpIndexStr, chunk] =
+      const [identifier, chunkIndexStr, totalChunksStr, sdpIndexStr, ...rest] =
         contents.split(":");
+      const chunk = rest.join(":");
       const chunkIndex = parseInt(chunkIndexStr);
       const totalChunks = parseInt(totalChunksStr);
       const sdpIndex = parseInt(sdpIndexStr);
@@ -146,22 +148,21 @@ async function main() {
       if (!cc.sdpChunks) {
         cc.sdpChunks = [];
       }
-      cc.sdpChunks[chunkIndex] = chunk;
+      cc.sdpChunks.push({
+        index: chunkIndex,
+        chunk,
+      });
 
       // If all chunks from index 0 to totalChunks - 1 are present, then we can establish the connection
-      let allChunksPresent = true;
-      for (let i = 0; i < totalChunks; i++) {
-        if (!cc.sdpChunks[i]) {
-          allChunksPresent = false;
-          break;
-        }
-      }
-      if (!allChunksPresent) {
+      if (cc.sdpChunks.length !== totalChunks) {
         return;
       }
 
       // If all chunks are present, then we can establish the connection
-      const sdp = cc.sdpChunks.join("");
+      const sdp = cc.sdpChunks
+        .sort((a, b) => a.index - b.index)
+        .map((c) => c.chunk)
+        .join("");
       console.log("sdp", sdp);
       cc.peerConnection.setRemoteDescription({
         type: "answer",
