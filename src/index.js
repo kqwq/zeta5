@@ -68,12 +68,18 @@ async function refreshOffers(numberOfOffers = 100) {
     const offer = await connection.createOffer();
     offers.push(offer);
   }
+  // Remove all files in offers directory
+  const files = await fs.promises.readdir(offersDir);
+  for (const file of files) {
+    await fs.promises.unlink(`${offersDir}/${file}`);
+  }
+
   // Write offers to offers directory
   const date = new Date();
   const filename = getHourlyFilename(date);
   await fs.promises.writeFile(
     `${offersDir}/${filename}`,
-    `const offers = ${JSON.stringify(
+    `window.sdp = ${JSON.stringify(
       offers.map((offer) => offer.sdp),
       null,
       2
