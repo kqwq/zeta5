@@ -44,17 +44,19 @@ const CONFIGURATION = {
   */
   publicServerIPEntry: "look-up",
   publicServerIP: "", // Only used for known public server IP type
+  publicServerPort: 47777, // Default port is 47777 for zeta5
 
   /*
     specifics about the TURN server
   */
-  listenToPort: 3478, // Default port is 3478
+  listenToPort: 47777, // Listen to the same port to avoid IP/port confusion
 };
 
 // Imports
 import fs from "fs";
 import fetch from "node-fetch";
 import Turn from "node-turn";
+import wtrc from "wrtc";
 
 /*
   A reference of all the Khan Academy API endpoints used
@@ -352,7 +354,7 @@ const main = async () => {
   console.log(
     `Connection code (copy / paste)\n\n` +
       colors.green +
-      `zeta:v5.0:${publicServerIP}:${handshakeProgramId}` +
+      `zeta:v5.1:${publicServerIP}:${CONFIGURATION.publicServerPort}:${handshakeProgramId}` +
       colors.reset +
       `\n\n ^ ^ ^ `
   );
@@ -363,15 +365,27 @@ const main = async () => {
   // If a client tries to connect, complete the handshake by updating the handshake program
   //...
 
+  // Create offer
+  const connection = new wtrc.RTCPeerConnection();
+  connection.onicecandidate = (event) => {
+    if (event.candidate) {
+      console.log("candidate", event.candidate);
+    }
+  };
+  const offer = await connection.createOffer();
+  await connection.setLocalDescription(offer);
+  console.log("offer", offer);
+
   // Listen with the TURN server
   const server = new Turn({
+    listeningPort: CONFIGURATION.listenToPort,
     authMech: "long-term",
     credentials: {
       username: "password",
     },
   });
   server.onSdpPacket = (contents) => {
-    console.log("sdp", contents);
+    console.log("sdp", JSON.stringify(contents));
   };
   server.start();
   console.log("TURN server listening on port", CONFIGURATION.listenToPort);

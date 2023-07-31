@@ -1,6 +1,6 @@
 {
   "name": "zeta5-server",
-  "version": "1.0.0",
+  "version": "1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -12,6 +12,7 @@
   "dependencies": {
     "fs": "^0.0.1-security",
     "node-fetch": "^3.3.2",
-    "node-turn": "github:kqwq/node-turn"
+    "node-turn": "github:kqwq/node-turn",
+    "wrtc": "^0.4.7"
   }
 }

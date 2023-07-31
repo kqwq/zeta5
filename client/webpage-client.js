@@ -1,18 +1,18 @@
 async function connect(connectionString) {
-  const [zeta, version, serverIp, handshakeProgramId] =
+  const [zeta, version, serverIp, serverPort, handshakeProgramId] =
     connectionString.split(":");
-  var pc = new RTCPeerConnection({
+  new RTCPeerConnection({
     iceServers: [
       {
-        urls: [`turn:${serverIp}:3478`],
-        username: "testing-ok",
+        urls: [`turn:${serverIp}:${serverPort}`],
+        username: "testing-ok v1",
         credential: "1",
       },
     ],
     iceCandidatePoolSize: 1,
   });
 
-  console.log("Sent TURN request to", serverIp, pc);
+  console.log("Sent TURN request to", serverIp, serverPort);
 }
 
 async function main() {
