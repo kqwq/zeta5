@@ -6,9 +6,10 @@ async function connect(connectionString) {
       {
         urls: [`turn:${serverIp}:3478`],
         username: "testing-ok",
-        credential: "auth-token",
+        credential: "1",
       },
     ],
+    iceCandidatePoolSize: 1,
   });
 
   console.log("Sent TURN request to", serverIp, pc);
