@@ -49,7 +49,16 @@ async function getAnswerFromOffer(sdp) {
   const connection = new RTCPeerConnection();
   // Set data channel
   connection.ondatachannel = (event) => {
-    console.log("ondatachannel", event);
+    const channel = event.channel;
+    channel.onmessage = (event) => {
+      console.log("onmessage", event);
+    };
+    channel.onopen = (event) => {
+      console.log("onopen", event);
+    };
+    channel.onclose = (event) => {
+      console.log("onclose", event);
+    };
   };
   // Set remote description
   await connection.setRemoteDescription({

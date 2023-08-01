@@ -29,161 +29,104 @@ import fs from "fs";
 import fetch from "node-fetch";
 import Turn from "node-turn";
 import wtrc from "wrtc";
-
-// Constants
-const offersDir = "dist/offers";
-const colors = {
-  red: "\x1b[31m",
-  green: "\x1b[32m",
-  reset: "\x1b[0m",
-};
+import { commitToGithub, updateOffersDirectory } from "./lib/github.js";
+import { acceptPCAnswer, newPCWithDataChannel } from "./lib/webrtc.js";
 
 // Globals
-let connectionChannels = [];
-
-function getHourlyFilename(date) {
-  // Format YY-MM-DD-HH.js
-  const leftPad2 = (num) => {
-    return num.toString().padStart(2, "0");
-  };
-  const year = leftPad2(date.getUTCFullYear());
-  const month = leftPad2(date.getUTCMonth());
-  const day = leftPad2(date.getUTCDate());
-  const hour = leftPad2(date.getUTCHours());
-  return `${year}-${month}-${day}-${hour}.js`;
-}
+const badConnectStates = ["failed", "disconnected", "closed"];
+let peerConnections = [];
 
 async function refreshOffers(numberOfOffers = 100) {
   // Create 100 SDP offers and save them to the offers directory
   for (let i = 0; i < numberOfOffers; i++) {
-    const cc = connectionChannels[i];
-    if (!cc || !cc.isConnected) {
-      // Create and add offer
-      const peerConnection = new wtrc.RTCPeerConnection();
-      const sendChannel = peerConnection.createDataChannel("sendChannel");
-      sendChannel.onopen = (x) => {
-        sendChannel.send("open", x);
-      };
-      sendChannel.onclose = (x) => {
-        sendChannel.send("close", x);
-      };
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      const connectionChannel = {
-        isConnected: false,
-        offer,
-        peerConnection,
-      };
-      connectionChannels[i] = connectionChannel;
+    const pc = peerConnections[i];
+    if (!pc || badConnectStates.includes(pc.connectionState)) {
+      peerConnections[i] = new newPCWithDataChannel();
     }
   }
+}
 
-  // Remove all files in offers directory
-  const files = await fs.promises.readdir(offersDir);
-  for (const file of files) {
-    await fs.promises.unlink(`${offersDir}/${file}`);
+/**
+ * Recieves a chunk of an SDP offer and merges it with the other chunks,
+ * if all chunks are present then return it
+ * @param {string} contents
+ * @returns {Promise<string | null>}
+ */
+async function mergeSDPChunks(contents) {
+  // Make sure contents are valid
+  if (!contents.includes(":")) {
+    throw new Error("Invalid contents");
   }
 
-  // Write offers to offers directory
-  const date = new Date();
-  const filename = getHourlyFilename(date);
-  await fs.promises.writeFile(
-    `${offersDir}/${filename}`,
-    `window.sdp = ${JSON.stringify(
-      connectionChannels.map((cc) =>
-        cc?.isConnected ? "CONNECTED" : cc.offer.sdp
-      ),
-      null,
-      2
-    )};`
-  );
-  // Log
-  console.log(
-    colors.green,
-    `Wrote ${numberOfOffers} offers to ${offersDir}/${filename}`,
-    colors.reset
-  );
+  // Extract contents
+  const [identifier, chunkIndexStr, totalChunksStr, sdpIndexStr, ...rest] =
+    contents.split(":");
+  const chunk = rest.join(":");
+  const chunkIndex = parseInt(chunkIndexStr);
+  const totalChunks = parseInt(totalChunksStr);
+  const sdpIndex = parseInt(sdpIndexStr);
+
+  // Make sure connectionChannels[sdpIndex] is valid
+  const pc = peerConnections[sdpIndex];
+  if (!pc) {
+    throw new Error("Invalid sdpIndex" + sdpIndex);
+  }
+  if (pc.connectionState === "connected") {
+    throw new Error("Connection already established");
+  }
+  if (badConnectStates.includes(pc.connectionState)) {
+    throw new Error("Connection in bad state: " + pc.connectionState);
+  }
+
+  // Add chunk to peer connection
+  if (!pc.sdpChunks) {
+    pc.sdpChunks = [];
+  }
+  pc.sdpChunks.push({
+    index: chunkIndex,
+    chunk,
+  });
+
+  // If all chunks from index 0 to totalChunks - 1 are present, then we can establish the connection
+  if (pc.sdpChunks.length !== totalChunks) {
+    return null;
+  }
+
+  // If all chunks are present, then we can establish the connection
+  const sdp = cc.sdpChunks
+    .sort((a, b) => a.index - b.index)
+    .map((c) => c.chunk)
+    .join("");
+  return sdp;
 }
 
 async function main() {
-  // Manage websocket connections
-  const connections = [];
+  // Start by creating 100 peer connection offers, saving them to the offers directory, and committing to github
+  await refreshOffers(100);
+  await updateOffersDirectory(peerConnections);
+  await commitToGithub("Update offers");
 
-  await refreshOffers(3);
-
-  // Listen with the TURN server
-  const server = new Turn({
+  // Start up a TURN server to listen for SDP answers
+  const turnServer = new Turn({
     listeningPort: CONFIGURATION.listenToPort,
     authMech: "long-term",
     credentials: {
       username: "password",
     },
   });
-  server.onSdpPacket = (contents) => {
+  turnServer.onSdpPacket = async (contents) => {
     try {
       // Log
-      console.log("onSdpPacket", JSON.stringify(contents));
-      if (!contents.includes(":")) {
-        throw new Error("Invalid contents");
-      }
-
-      // Extract contents
-      const [identifier, chunkIndexStr, totalChunksStr, sdpIndexStr, ...rest] =
-        contents.split(":");
-      const chunk = rest.join(":");
-      const chunkIndex = parseInt(chunkIndexStr);
-      const totalChunks = parseInt(totalChunksStr);
-      const sdpIndex = parseInt(sdpIndexStr);
-
-      // Make sure connectionChannels[sdpIndex] is valid
-      const cc = connectionChannels[sdpIndex];
-      if (!cc) {
-        throw new Error("Invalid sdpIndex" + sdpIndex);
-      }
-      if (cc.isConnected) {
-        throw new Error("Connection already established");
-      }
-
-      // Add chunk to cc.sdpChunks
-      if (!cc.sdpChunks) {
-        cc.sdpChunks = [];
-      }
-      cc.sdpChunks.push({
-        index: chunkIndex,
-        chunk,
-      });
-
-      // If all chunks from index 0 to totalChunks - 1 are present, then we can establish the connection
-      if (cc.sdpChunks.length !== totalChunks) {
-        return;
-      }
-
-      // If all chunks are present, then we can establish the connection
-      const sdp = cc.sdpChunks
-        .sort((a, b) => a.index - b.index)
-        .map((c) => c.chunk)
-        .join("");
-      console.log("sdp", sdp);
-      cc.peerConnection.setRemoteDescription({
-        type: "answer",
-        sdp,
-      });
-
-      // If the connection is established, then send a message
-      cc.peerConnection.onconnectionstatechange = () => {
-        if (cc.peerConnection.connectionState === "connected") {
-          // Log
-          console.log("Connection established");
-          cc.isConnected = true;
-          // Send message
-          cc.peerConnection.createDataChannel("test");
-        }
-      };
+      // console.log("onSdpPacket", JSON.stringify(contents));
+      const sdpAnswer = await mergeSDPChunks(contents);
+      await acceptPCAnswer(cc.pc, sdpAnswer);
     } catch (error) {
-      console.error("error", error.message);
+      console.error(error);
     }
   };
-  server.start();
+  turnServer.start();
+
+  // Log
   console.log("TURN server listening on port", CONFIGURATION.listenToPort);
 }
 
