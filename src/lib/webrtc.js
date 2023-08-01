@@ -34,12 +34,11 @@ export async function acceptPCAnswer(localPC, sdpAnswer) {
 
   // If the connection is established, then send a message
   localPC.onconnectionstatechange = () => {
-    if (cc.peerConnection.connectionState === "connected") {
+    if (localPC.connectionState === "connected") {
       // Log
       console.log("Connection established");
-      cc.isConnected = true;
       // Send message
-      cc.peerConnection.createDataChannel("test");
+      localPC.dataChannel.send("Hello world");
     }
   };
 }

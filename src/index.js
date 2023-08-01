@@ -41,7 +41,7 @@ async function refreshOffers(numberOfOffers = 100) {
   for (let i = 0; i < numberOfOffers; i++) {
     const pc = peerConnections[i];
     if (!pc || badConnectStates.includes(pc.connectionState)) {
-      peerConnections[i] = new newPCWithDataChannel();
+      peerConnections[i] = newPCWithDataChannel();
     }
   }
 }

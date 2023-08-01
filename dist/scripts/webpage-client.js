@@ -125,7 +125,7 @@ async function main() {
   console.log("read offers", offers);
 
   let sdpIndex = ~~(Math.random() * offers.length);
-  const sdp = offers[sdpIndex];
+  const sdp = atob(offers[sdpIndex]);
   console.log("Selected offer", sdpIndex, JSON.stringify(sdp));
 
   const answer = await getAnswerFromOffer(sdp);
