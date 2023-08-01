@@ -42,10 +42,15 @@ export async function updateOffersDirectory(connectionChannels) {
 
   // Write offers to offers directory
   const code = `window.sdp = ${JSON.stringify(
-    connectionChannels.map((cc) =>
-      // Blank if already connected, encoded in base64 if available
-      cc?.isConnected ? "" : Buffer.from(cc.offer.sdp).toString("base64")
-    ),
+    connectionChannels.map((pc) => {
+      // If new, encode the peer connection's SDP offer in base64
+      console.log(pc);
+      if (pc?.localDescription?.type === "offer") {
+        return btoa(pc.localDescription.sdp);
+      }
+      // If not new, then return nothing
+      return "";
+    }),
     null,
     2
   )};`;
